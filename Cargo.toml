@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = ["rfermata-macros"]
+
+[package]
+name = "rfermata"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+midir = "0.10.1"
+rfermata-macros = { path = "./rfermata-macros" }
+thiserror = "2.0.12"
