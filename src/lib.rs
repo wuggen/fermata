@@ -51,19 +51,30 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("Connection open, playing");
 
     let mut running = None;
+    let mut send_msg = |msg: midi::Message| {
+        let encode_status = Some(msg.status()) != running;
+        running = Some(msg.status());
+        let _ = conn_out.send(&msg.encode(encode_status));
+    };
+
     let mut play_note = |note: (PitchClass, u8), duration: u64| {
         const VEL: u8 = 0x64;
 
         let note = note.0.midi_note(note.1).unwrap();
 
-        let msg = note_on!(note, VEL);
-        let encode_status = Some(msg.status()) != running;
-        running = Some(msg.status());
-
-        let _ = conn_out.send(&msg.encode(encode_status));
+        send_msg(midi::Message::NoteOn {
+            channel: 0,
+            note,
+            velocity: VEL,
+        });
 
         std::thread::sleep(Duration::from_millis(duration * 150));
-        let _ = conn_out.send(&note_on!(note, 0).encode(false));
+
+        send_msg(midi::Message::NoteOn {
+            channel: 0,
+            note,
+            velocity: 0,
+        });
     };
 
     use PitchClass::*;
