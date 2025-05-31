@@ -172,7 +172,7 @@ macro_rules! ck_data {
 
 macro_rules! ck_len {
     ($bytes:expr, $op:tt $len:expr) => {
-        if $bytes.len() $op $len {
+        if !($bytes.len() $op $len) {
             return Err(DecodeError::IncorrectLen);
         }
     };
