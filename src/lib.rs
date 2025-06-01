@@ -5,6 +5,7 @@ use std::time::Duration;
 use midir::MidiOutput;
 use pitch::PitchClass;
 
+pub mod general_midi;
 pub mod midi;
 pub mod pitch;
 

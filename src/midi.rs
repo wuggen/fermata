@@ -1,4 +1,8 @@
 //! Type representations for MIDI messages and values.
+//!
+//! This module includes definitions for the basic MIDI specification. The
+//! General MIDI sound maps are defined in the
+//! [`general_midi`](crate::general_midi) module.
 
 use std::fmt::{self, Debug, Formatter};
 use std::ops::Deref;
@@ -518,7 +522,7 @@ macro_rules! impl_controller {
         /// reserved to designate [`ChannelMode`]s, since the status bytes for Control
         /// Change and Channel Mode messages are equal. Here too, such a controller
         /// number will be encoded faithfully if given; however, decoding such a message
-        /// will instead return a [`ChannelMessage::ChannelMode`].
+        /// will instead yield a [`Message::ChannelMode`].
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub enum Controller {
             $(
@@ -820,7 +824,7 @@ pub mod param {
     //! Constants for MIDI Registered Parameter Numbers.
     //!
     //! These are the performance configuration parameters numbers defined by
-    //! the MIDI specification, ! for use with controller numbers 100 and 101,
+    //! the MIDI specification, for use with controller numbers 100 and 101,
     //! Registered Parameter Number LSB and Registered Parameter Number MSB.
 
     pub const PITCH_BEND_SENSITIVITY_LSB: u8 = 0x00;
