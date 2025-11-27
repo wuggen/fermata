@@ -191,9 +191,7 @@ impl PitchClass {
     ///
     /// This method will prefer enharmonics that refer to `self` over (perhaps
     /// more canonical) enharmonics. For instance, `PitchClass::B.raised()
-    /// == PitchClass::Bs`, rather than `PitchClass::C`. Similarly,
-    /// `PitchClass::E.raised() == PitchClass::Es`, but `PitchClass::Ff.raised()
-    /// == PitchClass::F`.
+    /// == PitchClass::Bs`, and `PitchClass::Cf.raised() == PitchClass::C`.
     pub const fn raised(self) -> Self {
         match self {
             Self::Bs | Self::C => Self::Cs,
@@ -215,11 +213,9 @@ impl PitchClass {
 
     /// Lower this pitch class a semitone.
     ///
-    /// This method will prefer enharmonics that refer to `self`
-    /// over (perhaps more canonical) enharmonics. For instance,
-    /// `PitchClass::C.lowered() == PitchClass::Cf`, rather than
-    /// `PitchClass::B`. Similarly, `PitchClass::F.lowered() == PitchClass::Ff`,
-    /// but `PitchClass::Es.lowered() == PitchClass::E`.
+    /// This method will prefer enharmonics that refer to `self` over (perhaps
+    /// more canonical) enharmonics. For instance, `PitchClass::C.lowered() ==
+    /// PitchClass::Cf`, and `PitchClass::Bs.lowered() == PitchClass::B`.
     pub const fn lowered(self) -> Self {
         match self {
             Self::C => Self::Cf,

@@ -217,7 +217,7 @@ macro_rules! mk_percussion {
     ) => {
         /// A percussion sound as defined by the General MIDI percussion map.
         ///
-        /// In a General MIDI system, non-chromatic percussion is sent on MIDI
+        /// In a General MIDI system, unpitched percussion is sent on MIDI
         /// channel 10 (1-based, transmitted over the wire in 0-based form
         /// as 9), and particular percussion sounds correspond to particular
         /// MIDI note numbers on that channel. This enum encodes those note
