@@ -142,6 +142,12 @@ impl Debug for EncodedMessage {
     }
 }
 
+/// Usage:
+///
+/// ```ignore
+/// let b = chan!(c); // Clear the high four bits of `c`
+/// let b = chan!(status, c); // Clears the high four bits of `c` and OR's the result with `status`
+/// ```
 macro_rules! chan {
     ($ch:expr) => {
         $ch & status::CHANNEL_MASK
@@ -152,12 +158,23 @@ macro_rules! chan {
     };
 }
 
+/// Usage:
+///
+/// ```ignore
+/// let b = data!(val); // Clears the high bit of `val`
+/// ```
 macro_rules! data {
     ($d:expr) => {
         $d & status::DATA_MASK
     };
 }
 
+/// Usage:
+///
+/// ```ignore
+/// ck_data!(b1, b2, b3); // `return Err(InvalidDataByte)` if any arguments have their high bit set
+/// ck_data!([] iterable); // `return Err(InvalidDataByte)` if any item of the given iterable has its high bit set
+/// ```
 macro_rules! ck_data {
     ([] $bytes:expr) => {
         for b in $bytes {
@@ -174,6 +191,14 @@ macro_rules! ck_data {
     };
 }
 
+/// Usage:
+///
+/// ```ignore
+/// // `return Err(IncorrectLen)` if `array.len()` does not satisfy the given comparison
+/// ck_len!(array, < 2);
+/// ck_len!(array, == 1);
+/// ck_len!(array, <= 5);
+/// ```
 macro_rules! ck_len {
     ($bytes:expr, $op:tt $len:expr) => {
         if !($bytes.len() $op $len) {
@@ -215,6 +240,11 @@ impl Message {
     ///
     /// For system exclusive messages, the data payload must be encoded
     /// separately; see [`Message`] for further details.
+    ///
+    /// If `encode_status` is false, the message status byte is not encoded,
+    /// unless this would result in an empty message (i.e. `self` represents
+    /// a message that has no data payload). This functionality is to support
+    /// encoding of running status.
     pub fn encode(&self, encode_status: bool) -> EncodedMessage {
         let mut enc = EncodedMessage::new();
 
@@ -265,11 +295,13 @@ impl Message {
 
     /// Decode a message from a byte slice.
     ///
-    /// The given slice must contain exactly one MIDI message, beginning with a
-    /// valid status byte if no running status is provided.
+    /// The given slice must contain exactly one MIDI message, beginning with
+    /// a valid status byte unless a running status is provided. If a running
+    /// status is provided, and the given slice does not begin with a status
+    /// byte, the given running status is assumed.
     ///
     /// For system exclusive messages, this function will decode the
-    /// manufacturer ID only; the contents of the given slice after the ID is
+    /// manufacturer ID only; the contents of the slice following the ID is
     /// assumed to be the data payload, and is not examined.
     pub fn decode(mut bytes: &[u8], running_status: Option<u8>) -> Result<Self, DecodeError> {
         let first = *bytes.get(0).ok_or(DecodeError::EmptyBuffer)?;
@@ -451,6 +483,7 @@ impl Message {
 }
 
 impl EncodedMessage {
+    /// Create a new zeroed encoded message buffer.
     const fn new() -> Self {
         Self {
             buf: [0; 4],
@@ -458,6 +491,9 @@ impl EncodedMessage {
         }
     }
 
+    /// Push a single byte to this buffer.
+    ///
+    /// Panics if the buffer already contains 4 bytes.
     fn push(&mut self, byte: u8) {
         *self
             .buf
@@ -466,6 +502,9 @@ impl EncodedMessage {
         self.len += 1;
     }
 
+    /// Push all of the given bytes in sequence.
+    ///
+    /// Panics if this would result in more than four bytes in the buffer.
     fn push_all(&mut self, bytes: &[u8]) {
         self.buf
             .get_mut(self.len as usize..self.len as usize + bytes.len())
@@ -517,12 +556,13 @@ macro_rules! impl_controller {
         /// will be cleared, as with all data bytes). When decoding, however, a more
         /// specific variant will always be returned if it exists.
         ///
-        /// Note that bytes 120 through 127 (`0x78` through `0x7f`) are not valid
-        /// controller numbers, even for an undefined controller; rather, they are
-        /// reserved to designate [`ChannelMode`]s, since the status bytes for Control
-        /// Change and Channel Mode messages are equal. Here too, such a controller
-        /// number will be encoded faithfully if given; however, decoding such a message
-        /// will instead yield a [`Message::ChannelMode`].
+        /// Note that bytes 120 through 127 (`0x78` through `0x7f`) are not
+        /// valid controller numbers, even for an undefined controller; rather,
+        /// they are reserved to designate [`ChannelMode`]s, since the status
+        /// bytes for Control Change and Channel Mode messages are equal. Here
+        /// too, such a controller number will be encoded faithfully if given in
+        /// an `Undefined`; however, decoding such a message will instead yield
+        /// a [`Message::ChannelMode`].
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub enum Controller {
             $(
@@ -533,12 +573,15 @@ macro_rules! impl_controller {
 
         impl Controller {
             /// Get the data byte for this controller.
+            ///
+            /// If `self` is `Controller::Undefined`, the high bit of the
+            /// contained byte will be cleared.
             pub const fn controller_number(self) -> u8 {
                 match self {
                     $(
                         Self::$Name => $num,
                     )*
-                    Self::Undefined(b) => b,
+                    Self::Undefined(b) => data!(b),
                 }
             }
 
@@ -553,7 +596,7 @@ macro_rules! impl_controller {
                         $num => Some(Self::$Name),
                     )*
 
-                    120..=127 => None,
+                    120..=255 => None,
                     b => Some(Self::Undefined(b)),
                 }
             }
@@ -771,8 +814,8 @@ pub mod status {
     ///
     /// This is equal to [`CONTROL_CHANGE`], the status byte for Control Change
     /// messages. The two message kinds are distinguished by the values of their
-    /// first data byte; Control Change messages must have a first data byte
-    /// less than 120 (0x78).
+    /// first data byte; Channel Mode messages must have a first data byte
+    /// greater than or equal to 120 (0x78).
     pub const CHANNEL_MODE: u8 = 0xb0;
 
     /// Bit mask for channel values.
@@ -841,4 +884,16 @@ pub mod param {
 
     pub const TUNING_BANK_SELECT_LSB: u8 = 0x04;
     pub const TUNING_BANK_SELECT_MSB: u8 = 0x00;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn from_controller_number_none() {
+        assert!(Controller::from_controller_number(120).is_none());
+        assert!(Controller::from_controller_number(128).is_none());
+        assert!(Controller::from_controller_number(255).is_none());
+    }
 }
