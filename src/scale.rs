@@ -17,7 +17,7 @@ use crate::pitch::{Accidental, PitchClass};
 /// represented as follows:
 ///
 /// ```
-/// # use rfermata::scale::ScaleDegree;
+/// # use fermata::scale::ScaleDegree;
 /// let diatonic_major_3 = ScaleDegree {
 ///     semitone: 4,
 ///     letter: 2,
@@ -82,7 +82,7 @@ impl ScaleDegree {
     /// degree. For instance:
     ///
     /// ```should_panic
-    /// # use rfermata::{scale::ScaleDegree, pitch::{PitchClass, Letter, Accidental}};
+    /// # use fermata::{scale::ScaleDegree, pitch::{PitchClass, Letter, Accidental}};
     /// let degree = ScaleDegree {
     ///     semitone: 5,
     ///     letter: 1,
