@@ -58,36 +58,36 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         let _ = conn_out.send(&msg.encode(encode_status));
     };
 
-    let mut play_note = |note: (PitchClass, u8), duration: u64| {
-        const VEL: u8 = 0x64;
+    // let mut play_note = |note: (PitchClass, u8), duration: u64| {
+    //     const VEL: u8 = 0x64;
 
-        let note = note.0.midi_note(note.1).unwrap();
+    //     let note = note.0.midi_note(note.1).unwrap();
 
-        send_msg(midi::Message::NoteOn {
-            channel: 0,
-            note,
-            velocity: VEL,
-        });
+    //     send_msg(midi::Message::NoteOn {
+    //         channel: 0,
+    //         note,
+    //         velocity: VEL,
+    //     });
 
-        std::thread::sleep(Duration::from_millis(duration * 150));
+    //     std::thread::sleep(Duration::from_millis(duration * 150));
 
-        send_msg(midi::Message::NoteOn {
-            channel: 0,
-            note,
-            velocity: 0,
-        });
-    };
+    //     send_msg(midi::Message::NoteOn {
+    //         channel: 0,
+    //         note,
+    //         velocity: 0,
+    //     });
+    // };
 
-    use PitchClass::*;
+    // use PitchClass::*;
 
-    play_note((Fs, 4), 4);
-    play_note((Es, 4), 3);
-    play_note((Ds, 4), 1);
-    play_note((Cs, 4), 6);
-    play_note((B, 3), 2);
-    play_note((As, 3), 4);
-    play_note((Gs, 3), 4);
-    play_note((Fs, 3), 4);
+    // play_note((Fs, 4), 4);
+    // play_note((Es, 4), 3);
+    // play_note((Ds, 4), 1);
+    // play_note((Cs, 4), 6);
+    // play_note((B, 3), 2);
+    // play_note((As, 3), 4);
+    // play_note((Gs, 3), 4);
+    // play_note((Fs, 3), 4);
 
     Ok(())
 }
