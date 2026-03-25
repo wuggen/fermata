@@ -5,58 +5,77 @@ use std::time::Duration;
 use midir::MidiOutput;
 use pitch::PitchClass;
 
+use crate::pitch::Letter;
+use crate::scale::diatonic::{AeolianMode, IonianMode};
+use crate::scale::{Scale, ScaleKind};
+
 pub mod general_midi;
 pub mod midi;
 pub mod pitch;
+pub mod scale;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let midi_out = MidiOutput::new("RFermata")?;
-
-    let out_ports = midi_out.ports();
-
-    let out_port = match out_ports.len() {
-        0 => return Err("no output ports found".into()),
-        1 => {
-            println!(
-                "Found one MIDI port: {}",
-                midi_out.port_name(&out_ports[0]).unwrap()
-            );
-            &out_ports[0]
+    fn print_scale<K: ScaleKind>(root: PitchClass) {
+        let scale = Scale::<K>::new(root);
+        for pitch in scale.scale_degrees() {
+            print!("{pitch} ");
         }
-        _ => {
-            println!("Available output ports:");
-            for (i, p) in out_ports.iter().enumerate() {
-                println!("{i}: {}", midi_out.port_name(p).unwrap());
-            }
+        println!();
+    }
 
-            let mut input = String::new();
-            loop {
-                input.clear();
-                print!("> ");
-                io::stdout().flush().unwrap();
-                io::stdin().read_line(&mut input)?;
+    print!("E Ionian: ");
+    print_scale::<IonianMode>(PitchClass::natural(Letter::E));
 
-                if let Ok(val) = input.trim().parse::<usize>() {
-                    if val < out_ports.len() {
-                        break &out_ports[val];
-                    }
-                }
+    print!("D Aeolian: ");
+    print_scale::<AeolianMode>(PitchClass::natural(Letter::D));
 
-                println!("Invalid port number");
-            }
-        }
-    };
+    // let midi_out = MidiOutput::new("RFermata")?;
 
-    println!("Opening connection...");
-    let mut conn_out = midi_out.connect(out_port, ":out")?;
-    println!("Connection open, playing");
+    // let out_ports = midi_out.ports();
 
-    let mut running = None;
-    let mut send_msg = |msg: midi::Message| {
-        let encode_status = Some(msg.status()) != running;
-        running = Some(msg.status());
-        let _ = conn_out.send(&msg.encode(encode_status));
-    };
+    // let out_port = match out_ports.len() {
+    //     0 => return Err("no output ports found".into()),
+    //     1 => {
+    //         println!(
+    //             "Found one MIDI port: {}",
+    //             midi_out.port_name(&out_ports[0]).unwrap()
+    //         );
+    //         &out_ports[0]
+    //     }
+    //     _ => {
+    //         println!("Available output ports:");
+    //         for (i, p) in out_ports.iter().enumerate() {
+    //             println!("{i}: {}", midi_out.port_name(p).unwrap());
+    //         }
+
+    //         let mut input = String::new();
+    //         loop {
+    //             input.clear();
+    //             print!("> ");
+    //             io::stdout().flush().unwrap();
+    //             io::stdin().read_line(&mut input)?;
+
+    //             if let Ok(val) = input.trim().parse::<usize>() {
+    //                 if val < out_ports.len() {
+    //                     break &out_ports[val];
+    //                 }
+    //             }
+
+    //             println!("Invalid port number");
+    //         }
+    //     }
+    // };
+
+    // println!("Opening connection...");
+    // let mut conn_out = midi_out.connect(out_port, ":out")?;
+    // println!("Connection open, playing");
+
+    // let mut running = None;
+    // let mut send_msg = |msg: midi::Message| {
+    //     let encode_status = Some(msg.status()) != running;
+    //     running = Some(msg.status());
+    //     let _ = conn_out.send(&msg.encode(encode_status));
+    // };
 
     // let mut play_note = |note: (PitchClass, u8), duration: u64| {
     //     const VEL: u8 = 0x64;
