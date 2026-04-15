@@ -155,10 +155,7 @@ pub struct PitchClass {
 
 impl PitchClass {
     pub const fn new(letter: Letter, accidental: Accidental) -> Self {
-        Self {
-            letter,
-            accidental,
-        }
+        Self { letter, accidental }
     }
 
     /// Create a natural pitch class of the given note letter.
@@ -189,5 +186,74 @@ impl Display for PitchClass {
             write!(f, "{}", self.accidental)?;
         }
         Ok(())
+    }
+}
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! accidental {
+    (s) => {
+        $crate::pitch::Accidental::Sharp
+    };
+
+    (ss) => {
+        $crate::pitch::Accidental::DoubleSharp
+    };
+
+    (f) => {
+        $crate::pitch::Accidental::Flat
+    };
+
+    (ff) => {
+        $crate::pitch::Accidental::DoubleFlat
+    };
+
+    () => {
+        $crate::pitch::Accidental::Natural
+    };
+}
+
+/// Convenience macro for constructing pitch classes.
+///
+/// Syntax:
+///
+/// ```
+/// # use fermata::{pitch::*, mkpitch};
+/// // Bare letters create natural pitch classes.
+/// assert_eq!(mkpitch!(A), PitchClass::natural(Letter::A));
+/// assert_eq!(mkpitch!(D), PitchClass::natural(Letter::D));
+///
+/// // A single `s` or `f` creates a sharp or flat pitch class. Note the space!
+/// assert_eq!(mkpitch!(G s), PitchClass::new(Letter::G, Accidental::Sharp));
+/// assert_eq!(mkpitch!(B f), PitchClass::new(Letter::B, Accidental::Flat));
+///
+/// // Double sharps and flats can be created with `ss` or `ff`.
+/// assert_eq!(mkpitch!(E ss), PitchClass::new(Letter::E, Accidental::DoubleSharp));
+/// assert_eq!(mkpitch!(C ff), PitchClass::new(Letter::C, Accidental::DoubleFlat));
+/// ```
+#[macro_export]
+macro_rules! mkpitch {
+    ($letter:ident $($accidental:ident)?) => {
+        $crate::pitch::PitchClass {
+            letter: $crate::pitch::Letter::$letter,
+            accidental: $crate::accidental!($($accidental)?),
+        }
+    };
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn pitch_macro() {
+        assert_eq!(mkpitch!(A), PitchClass::natural(Letter::A));
+        assert_eq!(
+            mkpitch!(C s),
+            PitchClass {
+                letter: Letter::C,
+                accidental: Accidental::Sharp
+            }
+        );
     }
 }

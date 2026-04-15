@@ -170,11 +170,11 @@ pub trait ScaleKind {
 
 /// A mode of a scale kind.
 ///
-/// A scale mode is characterized by a base scale kind (`K`) and a scale degree
-/// offset (`N`). For instance, the natural minor scale is the Aeolian mode of the
-/// diatonic scale, with the 6th scale degree of the diatonic major scale mapped
-/// to the 1st scale degree of the Aeolian mode, so its base kind is a diatonic
-/// scale and its (zero-based) offset is 5.
+/// A scale mode is characterized by a base [`ScaleKind`] (`K`) and a scale
+/// degree offset (`N`). For instance, the natural minor scale is the Aeolian
+/// mode of the diatonic scale, with the 6th scale degree of the diatonic major
+/// scale mapped to the 1st scale degree of the Aeolian mode, so its base kind
+/// is [`Diatonic`](diatonic::Diatonic) and its (zero-based) offset is 5.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Mode<const N: usize, K> {
     _marker: std::marker::PhantomData<([(); N], K)>,
@@ -252,6 +252,7 @@ impl<K: ScaleKind> Scale<K> {
         degree.try_to_pitch_class(self.root())
     }
 
+    /// Get an iterator over the pitch classes of this scale.
     pub fn scale_degrees(&self) -> impl Iterator<Item = PitchClass> {
         K::scale_degrees().map(|d| d.to_pitch_class(self.root))
     }
