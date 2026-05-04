@@ -236,6 +236,42 @@ impl Message {
         }
     }
 
+    /// Get the encoded byte length of this message.
+    ///
+    /// This assumes no running status, i.e. the status byte is included in
+    /// the encoding.
+    ///
+    /// For system exclusive messages, this function computes only the byte
+    /// length of the status and manufacturer ID components of the message,
+    /// disregarding any data payload.
+    pub const fn encoded_len(&self) -> usize {
+        match self {
+            Message::NoteOff { .. }
+            | Message::NoteOn { .. }
+            | Message::KeyPressure { .. }
+            | Message::ControlChange { .. }
+            | Message::PitchBend { .. }
+            | Message::ChannelMode { .. }
+            | Message::SongPositionPointer { .. } => 3,
+            Message::ProgramChange { .. }
+            | Message::ChannelPressure { .. }
+            | Message::QuarterFrame { .. }
+            | Message::SongSelect { .. } => 2,
+            Message::TuneRequest
+            | Message::EndOfExclusive
+            | Message::TimingClock
+            | Message::Start
+            | Message::Continue
+            | Message::Stop
+            | Message::ActiveSensing
+            | Message::SystemReset => 1,
+            Message::SystemExclusive { id } => match id {
+                ManufacturerId::Basic(_) => 2,
+                ManufacturerId::Extended(_) => 4,
+            },
+        }
+    }
+
     /// Encode this message its over-the-wire byte form.
     ///
     /// For system exclusive messages, the data payload must be encoded
@@ -890,10 +926,83 @@ pub mod param {
 mod test {
     use super::*;
 
+    /// Invalid controller numbers result in `None` from `Controller::from_controller_number`
     #[test]
     fn from_controller_number_none() {
         assert!(Controller::from_controller_number(120).is_none());
         assert!(Controller::from_controller_number(128).is_none());
         assert!(Controller::from_controller_number(255).is_none());
+    }
+
+    /// Agreement between `Message::encode()` and `Message::encoded_len()`
+    #[test]
+    fn encoded_len() {
+        let messages = [
+            Message::NoteOff {
+                channel: 0,
+                note: 64,
+                velocity: 64,
+            },
+            Message::NoteOn {
+                channel: 0,
+                note: 64,
+                velocity: 64,
+            },
+            Message::KeyPressure {
+                channel: 0,
+                note: 64,
+                pressure: 64,
+            },
+            Message::ControlChange {
+                channel: 0,
+                controller: Controller::Sustain,
+                value: 64,
+            },
+            Message::ProgramChange {
+                channel: 0,
+                program: 0,
+            },
+            Message::ChannelPressure {
+                channel: 0,
+                pressure: 64,
+            },
+            Message::PitchBend {
+                channel: 0,
+                pitch_bend: 128,
+            },
+            Message::ChannelMode {
+                channel: 0,
+                mode: ChannelMode::AllSoundOff,
+                value: 64,
+            },
+            Message::SystemExclusive {
+                id: ManufacturerId::Basic(12),
+            },
+            Message::SystemExclusive {
+                id: ManufacturerId::Extended(130),
+            },
+            Message::QuarterFrame { value: 64 },
+            Message::SongPositionPointer { pointer: 130 },
+            Message::SongSelect { song: 12 },
+            Message::TuneRequest,
+            Message::EndOfExclusive,
+            Message::TimingClock,
+            Message::Start,
+            Message::Continue,
+            Message::Stop,
+            Message::ActiveSensing,
+            Message::SystemReset,
+        ];
+
+        for msg in messages {
+            let encoded = msg.encode(true);
+            let encoded_len = msg.encoded_len();
+
+            assert_eq!(
+                encoded.len(),
+                encoded_len,
+                "mismatch between expected and actual encoded len: {msg:?} => {encoded:?} (expected len {encoded_len})"
+            );
+        }
     }
 }
