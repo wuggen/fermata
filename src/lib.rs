@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::time::Duration;
 
-use midir::MidiOutput;
+use midir::{MidiInput, MidiOutput};
 use pitch::PitchClass;
 
 use crate::pitch::Letter;
@@ -13,6 +13,7 @@ pub mod general_midi;
 pub mod midi;
 pub mod pitch;
 pub mod scale;
+pub mod stream;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     fn print_scale<K: ScaleKind>(root: PitchClass) {
@@ -28,6 +29,46 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     print!("D Aeolian: ");
     print_scale::<AeolianMode>(PitchClass::natural(Letter::D));
+
+    let midi_in = MidiInput::new("Fermata")?;
+    let in_ports = midi_in.ports();
+    let in_port = match in_ports.len() {
+        0 => return Err("no input ports found".into()),
+        1 => {
+            println!("Found one MIDI input port: {}", midi_in.port_name(&in_ports[0]).unwrap());
+            &in_ports[0]
+        }
+        _ => {
+            println!("Available input ports:");
+            for (i, p) in in_ports.iter().enumerate() {
+                println!("{i}: {}", midi_in.port_name(p).unwrap());
+            }
+
+            let mut input = String::new();
+            loop {
+                print!("> ");
+                io::stdout().flush().unwrap();
+                io::stdin().read_line(&mut input)?;
+
+                if let Ok(val) = input.trim().parse::<usize>() {
+                    if val < in_ports.len() {
+                        break &in_ports[val];
+                    }
+                }
+
+                println!("Invalid port number");
+                input.clear();
+            }
+        }
+    };
+
+    println!("Opening connection...");
+    let in_stream = stream::MidiInputStream::new(":in", midi_in, in_port);
+    println!("Connection open, recording messages");
+
+    for (stamp, msg) in in_stream {
+        println!("{stamp:05} - {msg:?}");
+    }
 
     // let midi_out = MidiOutput::new("RFermata")?;
 
